@@ -1,0 +1,632 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maine Guide Quiz</title>
+<style>
+  :root{
+    --dark:#14170F; --dark2:#1B1F14; --panel:#F7F5EA; --chip:#EDE9D8;
+    --ink:#1A1A14; --ink2:#6E6C5C; --ink-soft:#8B896F;
+    --lime:#D7FA3C; --lime-ink:#181A0E;
+    --ok:#2E8B4E; --err:#C0392B;
+    --pillA:#E7DAF6; --pillA-ink:#5B3E8C;
+    --pillB:#FBDDE9; --pillB-ink:#9C3E63;
+    --rule:rgba(26,26,20,.10); --rule2:rgba(26,26,20,.2);
+    --display:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    --ui:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1200px 500px at 100% -10%, rgba(215,250,60,.06), transparent 60%),
+      var(--dark);
+    color:var(--ink); font-family:var(--ui); line-height:1.5; -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .app{display:flex; gap:14px; max-width:1120px; margin:0 auto; padding:16px; min-height:100vh}
+
+  /* ---- rail ---- */
+  .rail{width:84px; flex:0 0 auto; display:flex; flex-direction:column; align-items:center; padding-top:6px}
+  .brand{width:44px; height:44px; border-radius:13px; background:var(--lime); display:flex; align-items:center; justify-content:center; font-family:var(--display); font-weight:700; font-size:16px; color:var(--lime-ink); margin-bottom:22px; letter-spacing:-.02em}
+  .navbtn{width:66px; padding:11px 4px 9px; border-radius:16px; background:transparent; border:0; color:#B9B79E; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:5px; font-family:var(--ui); font-size:11px; margin-bottom:8px; transition:background .15s,color .15s}
+  .navbtn svg{width:20px;height:20px}
+  .navbtn.active{background:var(--lime); color:var(--lime-ink)}
+  .navbtn:not(.active):hover{background:rgba(255,255,255,.06); color:#EDEBDA}
+  .navbtn .cnt{font-family:var(--mono); font-size:9px; opacity:.8}
+
+  /* ---- panel ---- */
+  .panel{flex:1; min-width:0; background:var(--panel); border-radius:28px; padding:22px 24px 26px; box-shadow:0 20px 60px rgba(0,0,0,.35)}
+
+  .topbar{display:flex; align-items:center; gap:16px; margin-bottom:20px}
+  .avatar{width:52px; height:52px; border-radius:16px; background:linear-gradient(135deg,#2A2E1F,#14170F); display:flex; align-items:center; justify-content:center; flex:0 0 auto}
+  .avatar svg{width:26px;height:26px}
+  .who h1{font-family:var(--display); font-size:21px; margin:0; font-weight:700; letter-spacing:-.01em}
+  .who p{margin:2px 0 0; font-size:12.5px; color:var(--ink2)}
+  .spacer{flex:1}
+  .gauge{width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; position:relative; flex:0 0 auto}
+  .gauge .hole{width:46px; height:46px; border-radius:50%; background:var(--panel); display:flex; flex-direction:column; align-items:center; justify-content:center}
+  .gauge .pct{font-family:var(--mono); font-size:13px; font-weight:600; line-height:1}
+  .gauge .lbl{font-family:var(--mono); font-size:6.5px; letter-spacing:.08em; color:var(--ink2); margin-top:2px}
+
+  .hr{border-bottom:1px solid var(--rule); margin:0 0 18px}
+
+  /* ---- chips / filters ---- */
+  details.filters{border:1px solid var(--rule2); border-radius:16px; margin:0 0 16px; background:var(--chip)}
+  details.filters>summary{cursor:pointer; padding:10px 14px; font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink2); list-style:none}
+  details.filters>summary::-webkit-details-marker{display:none}
+  details.filters>summary::before{content:"+ "}
+  details.filters[open]>summary::before{content:"\2212 "}
+  .chips{display:flex; flex-wrap:wrap; gap:6px; padding:0 12px 12px}
+  .chip{font-family:var(--ui); font-size:12px; background:#fff; border:1px solid var(--rule2); color:var(--ink2); padding:6px 12px; border-radius:999px; cursor:pointer; display:flex; gap:6px; align-items:center}
+  .chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--panel)}
+  .chip .n{font-family:var(--mono); font-size:9.5px; opacity:.7}
+
+  /* ---- buttons ---- */
+  .bar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px}
+  .btn{font-family:var(--ui); font-weight:600; font-size:12.5px; background:#fff; border:1px solid var(--rule2); color:var(--ink); padding:10px 16px; border-radius:12px; cursor:pointer}
+  .btn:hover{border-color:var(--ink)}
+  .btn.primary{background:var(--lime); color:var(--lime-ink); border-color:var(--lime)}
+  .btn.ghost{background:transparent; border-style:dashed}
+  .btn:disabled{opacity:.4; cursor:default}
+  button:focus-visible,.chip:focus-visible,.navbtn:focus-visible{outline:2px solid var(--lime); outline-offset:2px}
+
+  /* ---- meter/track ---- */
+  .meter{display:flex; align-items:baseline; gap:10px; font-family:var(--mono); font-size:10.5px; color:var(--ink2); letter-spacing:.04em; margin-bottom:6px}
+  .track{height:6px; background:var(--chip); border-radius:6px; position:relative; margin-bottom:18px; overflow:hidden}
+  .track i{position:absolute; inset:0 auto 0 0; background:var(--lime); width:0; transition:width .3s}
+
+  /* ---- quiz card ---- */
+  .qcard{background:#fff; border-radius:20px; padding:22px 22px 20px; box-shadow:0 1px 0 var(--rule)}
+  .qcard .tags{display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap}
+  .pill{font-family:var(--mono); font-size:10px; letter-spacing:.06em; padding:5px 11px; border-radius:999px}
+  .pill.a{background:var(--pillA); color:var(--pillA-ink)}
+  .pill.b{background:var(--pillB); color:var(--pillB-ink)}
+  .qimg{width:100%; height:190px; object-fit:contain; border-radius:14px; margin-bottom:16px; background:var(--chip); padding:8px}
+  .qcard h2{font-family:var(--display); font-size:clamp(18px,3.6vw,22px); line-height:1.3; margin:0 0 16px; font-weight:700}
+  .opts{display:flex; flex-direction:column; gap:8px}
+  .opt{text-align:left; font-family:var(--ui); font-size:14.5px; background:var(--panel); border:1px solid transparent; color:var(--ink); padding:12px 14px; border-radius:12px; cursor:pointer; display:flex; gap:12px; line-height:1.4}
+  .opt:hover:not(:disabled){border-color:var(--ink)}
+  .opt .k{font-family:var(--mono); font-size:11px; color:var(--ink2); padding-top:1px}
+  .opt.right{background:#E7F5EA; border-color:var(--ok)}
+  .opt.right .k{color:var(--ok)}
+  .opt.wrong{background:#FBEAE7; border-color:var(--err)}
+  .opt.wrong .k{color:var(--err)}
+  .opt:disabled{cursor:default; opacity:1}
+  .verdict{margin-top:16px; padding-top:14px; border-top:1px solid var(--rule); font-size:14px}
+  .verdict b{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; display:block; margin-bottom:5px}
+  .verdict.ok b{color:var(--ok)} .verdict.no b{color:var(--err)}
+
+  /* ---- results ---- */
+  .results h2{font-family:var(--display); font-size:26px; margin:0 0 4px; font-weight:700}
+  .score{font-family:var(--mono); font-size:46px; letter-spacing:-.02em; line-height:1; margin:8px 0 4px}
+  .score.pass{color:var(--ok)} .score.fail{color:var(--err)}
+  .missed{margin-top:20px; border-top:1px solid var(--rule2); padding-top:14px}
+  .missed h3{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink2); margin:0 0 10px}
+  .missed .item{border-bottom:1px solid var(--rule); padding:10px 0; font-size:14px}
+  .missed .item .q{font-family:var(--display); font-size:15.5px; margin-bottom:4px; font-weight:700}
+  .missed .item .a{color:var(--ok)}
+  .missed .item .y{color:var(--err); text-decoration:line-through; opacity:.75}
+
+  /* ---- missed list view ---- */
+  .mlist .item{background:#fff; border-radius:14px; padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:10px}
+  .mlist .item img{width:44px; height:44px; border-radius:10px; object-fit:cover; flex:0 0 auto}
+  .mlist .item .q{font-size:14px}
+  .mlist .item .t{font-family:var(--mono); font-size:9px; color:var(--ink2); text-transform:uppercase; letter-spacing:.06em}
+
+  .empty{padding:40px 10px; text-align:center; color:var(--ink2); font-size:14.5px}
+  footer{margin-top:22px; padding-top:12px; border-top:1px solid var(--rule); font-family:var(--mono); font-size:9.5px; letter-spacing:.04em; color:var(--ink-soft)}
+
+  @media (max-width:680px){
+    .app{flex-direction:column; padding:10px}
+    .rail{width:100%; flex-direction:row; justify-content:flex-start; gap:6px; padding:2px 2px 10px; overflow-x:auto}
+    .brand{margin:0 6px 0 0}
+    .navbtn{width:auto; flex-direction:row; padding:9px 12px; border-radius:12px}
+    .panel{border-radius:20px; padding:16px 14px 18px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <div class="rail">
+    <div class="brand">MG</div>
+    <button class="navbtn" id="navLaw" aria-label="Law and regs quiz">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V6a2 2 0 0 1 2-2h9l5 5v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 4v5h5"/></svg>
+      Law
+    </button>
+    <button class="navbtn" id="navAnimals" aria-label="Animal identification quiz">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 16l5-5 4 4 5-6 4 5"/><rect x="3" y="4" width="18" height="16" rx="3"/></svg>
+      Animals
+    </button>
+    <button class="navbtn" id="navMissed" aria-label="Missed questions">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/></svg>
+      Missed
+      <span class="cnt" id="missedCnt"></span>
+    </button>
+    <button class="navbtn" id="navReset" aria-label="Reset progress">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+      Reset
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="topbar">
+      <div class="avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#D7FA3C" stroke-width="1.6"><path d="M12 3c3 3 5 6 5 9a5 5 0 0 1-10 0c0-3 2-6 5-9Z"/></svg>
+      </div>
+      <div class="who">
+        <h1 id="hTitle">Guide Exam Quiz</h1>
+        <p id="hSub">Recreational classification · 70% to pass</p>
+      </div>
+      <div class="spacer"></div>
+      <div class="gauge" id="gauge"><div class="hole"><div class="pct" id="gaugePct">—</div><div class="lbl">LAST SCORE</div></div></div>
+    </div>
+    <div class="hr"></div>
+
+    <details class="filters" id="filtersBox">
+      <summary id="filterLabel">Topics — all</summary>
+      <div class="chips" id="chips"></div>
+      <div class="chips" style="padding-top:0">
+        <button class="btn" id="allOn">Select all</button>
+        <button class="btn" id="allOff">Clear</button>
+      </div>
+    </details>
+
+    <div class="bar">
+      <button class="btn primary" id="newRound">New round</button>
+      <button class="btn ghost" id="retestMissed">Retest missed</button>
+    </div>
+
+    <div id="view"></div>
+
+    <footer id="foot">Source: Maine Guide Handbook quiz bank (licensing/exam, lost-person protocol, boating/ATV/snowmobile law, Maine species &amp; ecology) plus a photo identification bank for Maine mammals, birds, fish, flora, snakes, and amphibians. No hunting, firearms, or fishing content. Animal photos: Wikimedia Commons.</footer>
+  </div>
+</div>
+
+<script>
+/* ============================ LAW & REGS DATA ============================ */
+const TOPICS = {
+  LIC:'Licensing & classifications', EXAM:'Exam process', LP:'Lost person',
+  REG:'Registration, tax & invasives', OPR:'Operators & education', EQP:'Required equipment',
+  NAV:'Navigation rules & lights', ATON:'Buoys & markers', OPS:'Operation laws & accidents',
+  PWC:'PWC & towing', EMG:'Emergencies & safety', DEF:'Definitions',
+  ATV:'ATV law', SNO:'Snowmobile law', RV:'ATV/snowmobile shared rules', SPEC:'Maine species & ecology'
+};
+
+const QUIZ_LAW = [
+{t:'LIC',q:'The Specialized Recreational classification qualifies you to guide which set of activities?',o:['Hunting, trapping, and overnight camping','Watercraft, ATVs, snowmobiling, and camping','Sea kayaking and paddlesports on the ocean','Sport fishing on tidal waters'],c:1,e:'Recreational covers watercraft, all-terrain vehicles, snowmobiling, and camping, plus paddlesports on inland waters.'},
+{t:'LIC',q:'How many hours worked in a calendar year count as one year of professional experience for Master Guide?',o:['80','120','240','500'],c:2,e:'240 hours equals one year. A minimum of 80 hours in a calendar year is required for any of that time to be creditable.'},
+{t:'LIC',q:'To apply for Master Guide certification, you must have been licensed in that classification each year during the preceding:',o:['Three years','Five years','Ten years','Fifteen years'],c:2,e:'Ten-year period preceding the affidavit, with at least five years of documented professional experience inside that window.'},
+{t:'LIC',q:'Which classification is required to guide paddlesports on the ocean?',o:['Recreational','Tide-Water Fishing','Sea-Kayaking','Master Guide'],c:2,e:'A current Specialized Sea-Kayaking classification is required for guiding paddlesports on the ocean.'},
+{t:'EXAM',q:'What score do you need to pass the written exam?',o:['60%','70%','75%','80%'],c:1,e:'70%, within a 90-minute time limit.'},
+{t:'EXAM',q:'You fail the written exam. How long before you can retake it?',o:['7 days','14 days','30 days','90 days'],c:1,e:'14 days for the written exam. A failed oral section requires at least 30 days.'},
+{t:'EXAM',q:'You fail one section of the oral exam. What applies?',o:['Retake immediately at no charge','Wait 14 days, no fee','Wait at least 30 days and pay $125 per classification','Retake the entire written exam first'],c:2,e:'At least 30 days, and a $125 fee per classification for retesting.'},
+{t:'EXAM',q:'You cancel your exam two hours before it starts. What happens?',o:['Full refund and reschedule','Fee is forfeited and you are rescheduled for the next available date','You are barred for 30 days','Nothing, as long as you call'],c:1,e:'Missing an exam without 24-hour notice forfeits the fee. You are rescheduled for the next available date.'},
+{t:'LP',q:'Which is NOT one of the five headings of lost-person planning?',o:['Prevention or pre-briefing','Quick or hasty search','Notification of the media','Securing the rest of the party'],c:2,e:'The five are prevention/pre-briefing, hasty search, securing the party, notification of authorities, and diligent search.'},
+{t:'LP',q:'Which three items should a guest carry on their person rather than in a fanny pack?',o:['Map, GPS, and flashlight','Knife, whistle, and fire starter','Food, water, and medication','Compass, rope, and first aid kit'],c:1,e:'A fanny pack is easy to leave behind, so the critical three go around the neck and in pockets.'},
+{t:'LP',q:'What is the universal signal for a lost person?',o:['Two blasts on a whistle','Three shots spaced close together','A continuous shout','One shot every ten minutes'],c:1,e:'Three shots close together. A common whistle system is three blasts from the lost person answered by two from the guide.'},
+{t:'LP',q:'PLS stands for:',o:['Primary Lost Sector','Place Last Seen','Personal Locator Signal','Planned Line of Search'],c:1,e:'Place Last Seen. Mark it with flagging, on your map, and in the GPS.'},
+{t:'LP',q:'The most direct contact for the Warden Service is:',o:['911 dispatch','The nearest State Police Barracks','MDIFW headquarters in Augusta','The local sheriff'],c:1,e:'The nearest State Police Barracks is the most direct contact.'},
+{t:'LP',q:'You should notify the Warden Service:',o:['Only after searching a full 24 hours','As soon as the hasty search fails and a more extensive search is needed','Only if the lost person has a medical condition','Only after you have exhausted your own physical ability'],c:1,e:'Call once the hasty search is over and you know an extensive search is coming. It is a heads-up, not necessarily a request for help.'},
+{t:'LP',q:'A guest becomes lost. What should you have told them to do beforehand?',o:['Walk downhill until they find water','Follow the nearest woods road out','Stay put, get to an opening, and build a fire','Fire three shots and then walk toward camp'],c:2,e:'Stopping as soon as they realize they are lost keeps them close. A fire keeps them busy, calms them, and makes smoke visible from a distance.'},
+{t:'LP',q:'Members of the party want to help search. What is the rule?',o:['Send them out in pairs','Let anyone go who knows the area','Keep them in place signaling, with tasks to do','Send only family members of the lost person'],c:2,e:'Keep them secured, signaling on schedule, and busy with wood, meals, and listening. Bend the rule only for a specific reason, and never leave a helper alone.'},
+{t:'LP',q:'What coordinate system does the notification list specify for reporting your camp location?',o:['Latitude and longitude in degrees/minutes','UTM map coordinates','Township and range','MGRS'],c:1,e:'UTM map coordinates for camp, PLS, and the meeting point.'},
+{t:'REG',q:'An out-of-state boat may use Maine internal waters without Maine registration for how long?',o:['Less than 30 consecutive days','Less than 60 consecutive days','Less than 75 consecutive days','Less than 90 consecutive days'],c:1,e:'Fewer than 60 consecutive days, but it still needs a valid Lake and River Protection Sticker.'},
+{t:'REG',q:'Registration numbers must be at least how tall?',o:['2 inches','3 inches','4 inches','6 inches'],c:1,e:'At least 3-inch-high block letters, contrasting sharply, reading left to right on both sides of the bow.'},
+{t:'REG',q:'A registration expires on:',o:['The anniversary of purchase','June 30 of the following year','December 31 of the year it was issued','The date printed by the agent'],c:2,e:'Registrations are valid one year and expire December 31 of the year of issue.'},
+{t:'REG',q:'You sell your boat. Within how many days must you notify MDIFW?',o:['5','10','14','30'],c:1,e:'10 days. You must also remove and destroy the validation stickers, which are not transferable.'},
+{t:'REG',q:'Which watercraft is exempt from the annual excise tax?',o:['A USCG-documented yacht moored in Maine','A manually propelled watercraft 20 feet or less','A PWC registered out of state','A boat kept in Maine for 90 days'],c:1,e:'Also exempt: lifeboats carried aboard, dealer stock, commercial boats with no Maine base, boats in Maine 75 days or less, and property-tax-exempt boats.'},
+{t:'REG',q:'The Lake and River Protection Sticker costs how much for a boat not registered in Maine?',o:['$25','$40','$59','$115'],c:2,e:'$59 separately. For Maine-registered boats it is included in the registration fee.'},
+{t:'REG',q:'The fine for illegal stocking of fish in Maine is:',o:['$500','$2,500','$5,000','$10,000'],c:3,e:'$10,000, with a $2,000 reward for information leading to a conviction.'},
+{t:'REG',q:'A Hull Identification Number is:',o:['A 10-digit number on boats built after 1980','A 12-digit number on boats built after 1972','A 12-digit number assigned by the state','An 8-digit number stamped on the bow'],c:1,e:'12 digits, assigned by the manufacturer to watercraft built after 1972, on the transom.'},
+{t:'OPR',q:'Maine motorboat operator age restrictions apply to persons born:',o:['Before January 1, 1999','On or after January 1, 1999','On or after January 1, 2000','After they turn 12'],c:1,e:'Persons born before January 1, 1999 need no boater safety course to operate or supervise.'},
+{t:'OPR',q:'A 14-year-old born in 2010 wants to operate a 40 hp motorboat alone. Is that legal?',o:['Yes, 12 and older may operate any horsepower','Yes, with a parent on shore','No, over 25 hp requires a completed boater safety course and certificate','No, nobody under 16 may operate a motorboat'],c:2,e:'12 and older may operate up to 25 hp without a course. Above 25 hp requires the course and the certificate on hand.'},
+{t:'OPR',q:'The minimum age to operate a PWC in Maine is:',o:['12','14','16','18'],c:2,e:'No one under 16 may operate a PWC. At 16 and older, a course is required if born after January 1, 1999.'},
+{t:'OPR',q:'A person under 12 may operate a motorboat without supervision if it is:',o:['Up to 6 hp','Up to 10 hp','Up to 25 hp','Any horsepower on inland waters'],c:1,e:'Up to 10 hp alone; above that requires immediate supervision by someone 16 or older who has completed the course.'},
+{t:'OPR',q:'Which of these exempts a person from the boater education requirement?',o:['Holding a valid Maine Guide license meeting passenger-for-hire requirements','Being a Maine resident for ten years','Owning a boat registered before 1999','Having a valid driver license'],c:0,e:'Also exempt: USCG merchant marine documents, supervised dealer test drives, qualifying renters, and certain non-citizens arriving by sea.'},
+{t:'OPR',q:'A permit for a regatta on Maine state waters must be applied for at least:',o:['5 days prior','15 days prior','30 days prior','60 days prior'],c:1,e:'At least 15 days prior, to the Commissioner of MDIFW. A USCG permit is also needed on federally controlled waters.'},
+{t:'EQP',q:'A throwable device is required on watercraft:',o:['Of any length','16 feet or longer, except canoes, kayaks, and SUPs','26 feet or longer','Carrying passengers for hire only'],c:1,e:'And a throwable never counts toward the wearable-PFD-per-person requirement.'},
+{t:'EQP',q:'Who must wear a PFD based on age alone?',o:['Children under 8','Children 12 and younger while underway for recreation','Anyone under 16','Anyone under 18 on a motorboat'],c:1,e:'Including an operator who is 12 or younger. Exceptions: below decks, enclosed cabin, or a boat with a USCG certificate of inspection.'},
+{t:'EQP',q:'Everyone aboard a PWC must wear a PFD that is:',o:['Any USCG-approved type, including inflatable','USCG-approved and non-inflatable','Type I only','Rated performance level 150'],c:1,e:'Same rule applies to anyone being towed: non-inflatable.'},
+{t:'EQP',q:'On a new-style PFD label, a lower performance level number means:',o:['Offshore use with more flotation','Near-shore use in calm water, with more mobility','A device approved only in Canada','A throwable device'],c:1,e:'Lower numbers offer mobility and comfort but will not turn most unconscious persons face up. Higher numbers are for offshore use.'},
+{t:'EQP',q:'A stand-up paddleboard used after dark must carry:',o:['Nothing extra; SUPs are not watercraft','A white light such as a flashlight or headlamp','Red and green sidelights','A masthead light'],c:1,e:'SUPs are watercraft. They also need a PFD per person and a sound-producing device.'},
+{t:'EQP',q:'A disposable fire extinguisher should be removed from service when it is older than:',o:['5 years','10 years','12 years','It never expires'],c:2,e:'Check the manufacture date stamped on the bottle. Model year 2018+ boats may carry only date-stamped 5-B or 20-B units.'},
+{t:'EQP',q:'How many 5-B extinguishers must a 30-foot boat without a fixed system carry?',o:['One','Two','Three','None'],c:1,e:'26 to under 40 feet: two 5-B, or one 20-B. Under 26 feet: one 5-B. 40 to under 65 feet: three 5-B.'},
+{t:'EQP',q:'After fueling, a power ventilation system must run for at least:',o:['One minute','Two minutes','Four minutes','Ten minutes'],c:2,e:'Four minutes, after fueling and before starting the engine. Without power ventilation, open the compartment and sniff.'},
+{t:'EQP',q:'The noise limit for a watercraft in an operational sound test is:',o:['65 decibels','75 decibels','90 decibels','100 decibels'],c:1,e:'75 dB operational, 90 dB stationary. Altering a muffler to increase noise is illegal.'},
+{t:'EQP',q:'If you carry pyrotechnic visual distress signals, the minimum number is:',o:['One','Two','Three','Six'],c:2,e:'Three. VDSs are not required on Maine inland waters but are required on federally controlled waters.'},
+{t:'EQP',q:'A boat with a permanently installed toilet that is 70 feet long may use:',o:['Type I, II, or III MSD','Type II or III MSD only','Type I only','No MSD is required'],c:1,e:'Boats 65 feet or less may use Type I, II, or III. Over 65 feet must have Type II or III.'},
+{t:'NAV',q:'Two powerboats are meeting head-on. Who is the stand-on vessel?',o:['The larger boat','The boat on the right','Neither; both keep to starboard','The faster boat'],c:2,e:'Neither is stand-on in a power-vs-power head-on meeting. Both alter to starboard.'},
+{t:'NAV',q:'Two powerboats are crossing. The other boat is on your starboard side. What do you do?',o:['Hold course and speed; you are stand-on','Give way; the boat on your starboard is stand-on','Sound five short blasts and stop','Turn to port and pass ahead'],c:1,e:"The boat on the operator's port side is give-way. If the other boat is off your starboard, you give way."},
+{t:'NAV',q:'A powerboat is overtaking a sailboat. Who gives way?',o:['The sailboat, since power has right of way when overtaking','The powerboat, because it is overtaking','Neither; both alter course','Depends on which is larger'],c:1,e:'Overtaking always gives way, power or sail. The vessel being overtaken is stand-on.'},
+{t:'NAV',q:'At night you see only a white light ahead of you. What does it tell you?',o:['You are meeting a boat head-on','You are overtaking another watercraft','You are the give-way vessel in a crossing','You are looking at a safe water marker'],c:1,e:'The boat you are overtaking is stand-on whether underway or anchored, and you may pass on either side.'},
+{t:'NAV',q:'At night you see a red light and a white light. What do you do?',o:['Hold course; you are stand-on','Give way — slow down or turn right and pass behind','Sound one short blast and pass to port','Stop immediately'],c:1,e:'Red plus white means you must give way. Green plus white means you are stand-on but should stay alert.'},
+{t:'NAV',q:'A masthead light covers how many degrees?',o:['112.5','135','225','360'],c:2,e:'225 degrees, shining forward and to both sides. An all-round white light covers 360 degrees.'},
+{t:'NAV',q:'On a power-driven boat under 40 feet, sidelights must be visible from at least:',o:['1/2 mile','1 mile','2 miles','5 miles'],c:1,e:'Sidelights 1 mile, all-round white or masthead 2 miles. At 40 to 64 feet it becomes 2 miles and 5 miles.'},
+{t:'NAV',q:'A canoe under paddle at night must have:',o:['Red and green sidelights','A masthead light','A lantern or flashlight showing a white light ready at hand','No lighting requirement'],c:2,e:'Manually propelled craft must have a white light ready to show in time to prevent a collision.'},
+{t:'NAV',q:'Which VHF channel is for distress, safety, and hailing?',o:['Channel 9','Channel 13','Channel 16','Channel 22'],c:2,e:'16 is distress and hailing. 22 carries USCG weather and safety broadcasts. 13 is bridges, locks, and harbors.'},
+{t:'ATON',q:'Returning from open water, red buoys with even numbers should be:',o:['On your port side','On your starboard side','Passed on either side','Left well astern'],c:1,e:'Red Right Returning. Green markers with odd numbers mark the other edge of the channel.'},
+{t:'ATON',q:'A can buoy is:',o:['Red, cone-shaped, even numbered','Green, cylindrical, odd numbered','White with a blue band','Red and green banded'],c:1,e:'Nuns are red cones with even numbers; cans are green cylinders with odd numbers. Daymarks: red triangles and green squares.'},
+{t:'ATON',q:'A junction buoy shows green on top. The preferred channel is:',o:['To the right as you enter from open sea','To the left as you enter from open sea','Straight through the buoy','Closed to navigation'],c:0,e:'Green on top means preferred channel to the right; red on top means preferred channel to the left.'},
+{t:'ATON',q:'A white buoy with black vertical stripes means:',o:['Safe water, pass on either side','An obstruction — do not pass between the buoy and the nearest shore','A mooring buoy','A controlled area'],c:1,e:'Red vertical stripes on white indicate a safe water marker that may be passed on either side.'},
+{t:'ATON',q:'A regulatory marker with a crossed diamond means:',o:['Information','Danger','Exclusion — off limits to all watercraft','Controlled area'],c:2,e:'Square = information, circle = controlled, crossed diamond = exclusion, diamond = danger.'},
+{t:'ATON',q:'Which buoy may you legally tie up to?',o:['A safe water marker','A daymark','A mooring buoy, white with a blue horizontal band','Any buoy in a marina'],c:2,e:'Mooring to any other navigational aid is unlawful obstruction of navigation.'},
+{t:'OPS',q:'Headway speed is required within how many feet of any shoreline?',o:['100 feet','150 feet','200 feet','300 feet'],c:2,e:'200 feet, including islands. That area is also the definition of the Water Safety Zone.'},
+{t:'OPS',q:'Wakesurfing is prohibited in water shallower than:',o:['10 feet','15 feet','20 feet','30 inches'],c:1,e:'Less than 15 feet of water, or within 300 feet of the shoreline.'},
+{t:'OPS',q:'An observer for a towed skier must be at least:',o:['12 years old','14 years old','16 years old','18 years old'],c:0,e:'A responsible person at least 12, in addition to the operator, watching continuously. The only exception is a regulation slalom course with wide-angle mirrors.'},
+{t:'OPS',q:'When may a motorboat legally tow a water skier?',o:['Any time with navigation lights','From sunrise to sunset only','From a half hour before sunrise to a half hour after sunset','Only during daylight saving time'],c:2,e:'Towing is illegal between one-half hour after sunset and one-half hour before sunrise. A PWC may tow only sunrise to sunset.'},
+{t:'OPS',q:'The blood alcohol limit for a boat operator 21 or older in Maine is:',o:['0.05%','0.08%','0.10%','Any amount'],c:1,e:'0.08% at 21 and older; any amount if under 21. It is a criminal violation, and operating implies consent to chemical testing.'},
+{t:'OPS',q:'Property damage from an accident exceeds $2,000. You must file a written report within:',o:['24 hours','48 hours','72 hours','10 days'],c:2,e:'72 hours for damage over $2,000; 24 hours for death, disappearance, unconsciousness, medical treatment, or disability over 24 hours.'},
+{t:'OPS',q:'How close may you approach a U.S. Naval vessel?',o:['No closer than 100 yards, minimum speed within 500 yards','No closer than 500 yards','No closer than 50 feet','No restriction on inland waters'],c:0,e:'If you must pass within 100 yards for safe passage, contact the vessel or its USCG escort on VHF-FM channel 16.'},
+{t:'PWC',q:'Maine defines a PWC by a hull length of:',o:['12 feet or less','14 feet or less','16 feet or less','No length limit'],c:1,e:'14 feet or less as manufactured, inboard motor powering a jet pump. Craft rated 15 hp or less that are not unreasonably noisy are excluded.'},
+{t:'PWC',q:'A PWC may be operated:',o:['Any time with navigation lights','Between sunrise and sunset only','Between sunset and sunrise only','Only in daylight on inland waters'],c:1,e:'PWC may not be operated between sunset and sunrise, even if equipped with navigation lights.'},
+{t:'PWC',q:'You turn the PWC steering control to the right. What happens?',o:['The nozzle turns left and the bow swings right','The nozzle turns right, pushing the stern left, and the PWC turns right','Nothing until you apply the brake','The pump reverses thrust'],c:1,e:'Steering comes from the water jet, so at idle or with the engine off you may have no steering at all.'},
+{t:'PWC',q:'Minimum operating depth for a PWC is:',o:['12 inches','24 inches','30 inches','3 feet'],c:2,e:'At least 30 inches. Shallower water pulls sediment and vegetation into the pump.'},
+{t:'EMG',q:'You are caught in heavy seas. How do you take the waves?',o:['Stern-to, running with them','Beam-on to reduce pitching','Bow into the waves at a 45-degree angle','Bow into the waves at full throttle'],c:2,e:'45 degrees for a boat; a PWC heads directly into the waves.'},
+{t:'EMG',q:'Someone falls overboard. From which direction do you approach?',o:['Downwind or into the current, whichever is stronger','Always from upwind','Always from directly astern','Whichever is fastest'],c:0,e:'Reduce speed, toss a throwable, approach from downwind or into the current, shut off the engine, and bring them aboard over the stern.'},
+{t:'EMG',q:'Your boat capsizes in cold water a quarter mile from shore. What do you do?',o:['Swim for shore immediately','Stay with the boat and climb onto it','Remove heavy clothing to swim better','Tread water to stay warm'],c:1,e:'Stay with the watercraft and get as much of your body out of the water as possible. In cold water, float rather than tread, and keep your clothes on.'},
+{t:'EMG',q:'Which position reduces heat loss in cold water?',o:['Arms and legs spread to float flat','Knees drawn to chest, arms held to sides','Treading water vigorously','Swimming slowly in circles'],c:1,e:'It protects the major heat-loss areas. With others, huddle with arms around shoulders.'},
+{t:'EMG',q:'The anchor line should always be secured to the:',o:['Stern','Bow','Nearest cleat','Transom eye'],c:1,e:'Securing to the stern invites swamping. Bow only.'},
+{t:'EMG',q:'A float plan should include all of the following EXCEPT:',o:['Registration number, length, make, horsepower, engine type','Route, departure time, and expected return time','Names, addresses, and phones of everyone aboard','Your fuel receipts for the trip'],c:3,e:'Leave the float plan with a relative, friend, or local marina.'},
+{t:'DEF',q:'Watercraft length is measured:',o:['Including the outboard motor and swim platform','Bow tip in a straight line to the stern, excluding motors and non-molded platforms','Along the waterline only','From the transom to the forward cleat'],c:1,e:'Brackets, rudders, bow attachments, and ladders that are not molded into the hull are also excluded.'},
+{t:'DEF',q:'Inland waters means:',o:['All fresh water in Maine including tidal rivers','All waters within Maine above the rise and fall of the tide','Waters more than three miles from shore','Any water within 200 feet of shore'],c:1,e:'Territorial waters are within the rise and fall of the tide, seaward to the three-nautical-mile line.'},
+{t:'DEF',q:'Under Maine law, to operate a watercraft means:',o:['To have the engine running','To use it in any manner on the water, whether or not it is underway','To move under power only','To be listed on the registration'],c:1,e:'That is why intoxication and other operating offenses apply even at anchor or adrift.'},
+{t:'ATV',q:'The minimum age to operate an ATV in Maine is:',o:['8','10','12','16'],c:1,e:'Under 10 may not operate, and no one may permit it. Ages 10 to under 16 need an approved training course and must be accompanied by an adult.'},
+{t:'ATV',q:'A 13-year-old wants to ride an ATV on a state-approved trail. What is required?',o:['Nothing; trails are open to all ages','A completed training course and an adult accompanying them','A helmet only','Written landowner permission'],c:1,e:'Proof of course completion must be shown on request. The requirement does not apply on land where they are domiciled, land owned or leased by their parent or guardian, or an approved training site.'},
+{t:'ATV',q:'Accompanied by an adult means the supervising person is at least:',o:['16 years old','18 years old','21 years old','Any licensed driver'],c:2,e:'A parent or guardian, or another person 21 or older, within visual and voice contact and in effective control.'},
+{t:'ATV',q:'An oversized ATV is one that is:',o:['Wider than 50 inches or over 1,000 pounds','Wider than 65 inches or over 2,000 pounds','Over 700cc','Carrying more than two passengers'],c:1,e:'New oversized ATVs generally cannot be registered — only those registered before January 1, 2022 may continue.'},
+{t:'ATV',q:'How far may a registered ATV travel along a public way to cross it?',o:['100 yards','300 yards','500 yards','No limit if on the shoulder'],c:2,e:'Only the distance necessary and never more than 500 yards, on the extreme right, crossing as directly as possible. The same 500-yard limit applies to snowmobiles.'},
+{t:'ATV',q:'Protective headgear is required on an ATV for operators and passengers under:',o:['14','16','18','21'],c:2,e:'Bicycle helmets do not meet the standard — headgear must meet ANSI Z90.1 or FMVSS No. 218.'},
+{t:'ATV',q:'An ATV headlight must cast a white beam at least how far ahead?',o:['50 feet','100 feet','200 feet','500 feet'],c:1,e:'And the taillight must show red visible at least 100 feet behind. Same specs apply to snowmobiles.'},
+{t:'ATV',q:'ATV lights must be used from:',o:['Sunset to sunrise','One-half hour after sunset to one-half hour before sunrise','Dusk until midnight','Only when it is raining'],c:1,e:'Also any time objects are not clearly discernible at 500 feet due to insufficient light or fog.'},
+{t:'ATV',q:'You may not operate an ATV or snowmobile within how many feet of a dwelling or church?',o:['100 feet','200 feet','300 feet','500 feet'],c:1,e:'Exceptions: lawful public-way operation, the frozen surface of a body of water, and land the operator owns or is permitted to use.'},
+{t:'ATV',q:'Which of these is required to ride an ATV on cropland or in an orchard?',o:['Nothing, if it is a designated trail','Verbal permission','Written permission from the landowner, lessee, or representative','A commercial use permit'],c:2,e:'Permission is presumed on designated state-approved trails, but cropland, pastureland, and orchards require written permission.'},
+{t:'ATV',q:'When may you legally ride an ATV across a freshwater bog or vernal pool?',o:['Never','Only when the ground is frozen and sufficiently snow-covered to prevent vegetation damage','Any time with landowner permission','Only in summer'],c:1,e:'The rule also covers alpine tundra, rivers, brooks, streams, great ponds, nonforested wetlands, and source water protection areas. Designated DACF ATV trails are exempt.'},
+{t:'ATV',q:'A snorkel kit on an ATV is:',o:['Always legal','Legal only with permission of the landowner where you are riding','Legal only on state trails','Required for water crossings'],c:1,e:'Deep-water equipment is prohibited except with landowner permission or at a sanctioned racing meet.'},
+{t:'ATV',q:'Violating an ATV rule is a civil violation carrying a fine of:',o:['Not less than $50 nor more than $250','Not less than $100 nor more than $500','A flat $250','$1,000 minimum'],c:1,e:'Three or more civil violations under this Part within five years makes a further violation a Class E crime.'},
+{t:'ATV',q:'Which ATV offense does NOT carry a mandatory one-year suspension?',o:['Operating to endanger','Reckless operation','Operating at greater than a reasonable and prudent speed',"Abuse of another person's property"],c:2,e:'Unreasonable speed is a Class E crime without the mandatory suspension. The others require a safety and ethics course before reinstatement.'},
+{t:'SNO',q:'The resident snowmobile registration fee is:',o:['$33','$45','$55','$119'],c:2,e:'Nonresident season is $119, 10-day $99, 3-day $74, antique $33. All plus agent fee.'},
+{t:'SNO',q:'A person under what age may not operate a snowmobile across a public way maintained for travel?',o:['10','12','14','16'],c:2,e:'Separately, no one may permit a child under 10 to operate a snowmobile unless accompanied by an adult.'},
+{t:'SNO',q:'The noise limit for a snowmobile manufactured after October 1, 1985 is:',o:['65 dB at 50 feet','75 dB at 50 feet','78 dB at 50 feet','90 dB at 50 feet'],c:2,e:'Measured on the A scale by SAE J-192. Machines built after February 1, 2007 must also display a certification marking on the exhaust silencer.'},
+{t:'SNO',q:'An antique snowmobile registration allows operation:',o:['Anywhere, any time','Only for exhibitions, parades, public-interest events, or occasional personal use','Only on private land','Only during daylight'],c:1,e:'One-time $33 fee, Augusta office only, valid until ownership transfers. No registration numbers or stickers required.'},
+{t:'SNO',q:'When may an ATV legally use a Snowmobile Trail Fund trail?',o:['Never','When it has tracks and is registered as a snowmobile','Whenever there is snow cover','Only with a club membership'],c:1,e:'Otherwise it requires landowner authorization or an emergency involving safety of persons or property.'},
+{t:'RV',q:'The blood alcohol limit for operating an ATV or snowmobile at age 21 or older is:',o:['0.05%','0.08%','0.10%','Any amount'],c:1,e:'Any amount if under 21. Operating under the influence is a Class D crime, and refusing a chemical test is an aggravating factor in every case.'},
+{t:'RV',q:'What triggers 48 hours of mandatory, non-suspendable jail on a recreational vehicle OUI?',o:['Any conviction','Testing at 0.15% or more, refusing to stop for an officer, or refusing a chemical test','A second offense only','Causing property damage'],c:1,e:'Any one of those three circumstances.'},
+{t:'RV',q:'A trail accident causes $1,500 in property damage and no injuries. What must you file?',o:['Nothing','A written report to the commissioner within 24 hours','A written report to the commissioner within 72 hours','A report only if the landowner requests one'],c:2,e:'The threshold is $1,000 or more in property damage with no injuries requiring a physician and no death.'},
+{t:'RV',q:'Failing to render assistance after an ATV accident that caused serious bodily injury is:',o:['A civil violation','A Class E crime','A Class D crime','A Class C crime'],c:3,e:'Failing to meet accident duties is normally a Class E crime; it rises to Class C when the failure is intentional, knowing, or reckless and the accident caused serious bodily injury or death.'},
+{t:'RV',q:'A vertical purple paint stripe on a tree in Maine means:',o:['Trail marker','Access by Permission Only','Property boundary only','Timber harvest area'],c:1,e:'At least 1 inch wide, at least 8 inches long, three to five feet off the ground, no more than 100 feet apart, and at all vehicular access entries from a public road.'},
+{t:'RV',q:'How much of Maine forest land is privately owned?',o:['About 50%','About 70%','About 94%','All of it'],c:2,e:'More than half of that private land area is open to the public, which is why landowner relations drive trail access.'},
+{t:'RV',q:'How thick must clear blue lake ice be to support a group walking single file?',o:['2 inches','3 inches','5 inches','8 inches'],c:1,e:'2 inches holds one person on foot; 7½ inches a 2-ton passenger car. Reduce values 15% for river ice, and slush ice is half the strength of blue ice.'},
+{t:'RV',q:'You go through the ice on a snowmobile. What should you do?',o:['Remove your gloves for a better grip','Stand up as soon as you are back on the ice','Kick like a seal, slide onto the ice, then roll away from the hole','Swim under the ice toward shore'],c:2,e:'Keep gloves on, dig in with anything sharp, work toward the direction you came from if the ice keeps breaking, and stay low until well clear of the hole.'},
+{t:'SPEC',q:'What is the state tree of Maine?',o:['Red Spruce','Eastern White Pine','Sugar Maple','Paper Birch'],c:1,e:'Pinus strobus, reaching 100 to 150+ feet in the wild and living 200 to 400+ years. It provides nest sites for bald eagles and osprey.'},
+{t:'SPEC',q:'Which of these is a deciduous conifer that drops its needles each fall?',o:['Balsam Fir','Eastern Hemlock','Eastern Larch (Tamarack)','Black Spruce'],c:2,e:'Larix laricina turns bright yellow and drops its needles in late October to early November.'},
+{t:'SPEC',q:'Why is Paper Birch a favorite of cavity-nesting birds?',o:['Its bark peels away to form cavities','Its wood rots quickly once the tree dies, making excavation easy','It produces heavy mast crops','It is evergreen'],c:1,e:'Red Maple, Quaking Aspen, and American Elm are the other top cavity-nesting candidates for the same reason.'},
+{t:'SPEC',q:'Which tree lives longest among Maine natives in this guide?',o:['Balsam Fir','Paper Birch','Eastern White Cedar','Red Maple'],c:2,e:'Thuja occidentalis reaches 400 to 800+ years, despite standing only 40 to 50 feet tall. Balsam Fir, by contrast, lives only 70 to 150 years.'},
+{t:'SPEC',q:'Rust-red scorched treetops with new growth webbed together in silk indicates:',o:['Bronze Birch Borer','Spruce Budworm','Beech Scale','Balsam Woolly Adelgid'],c:1,e:'A native pest of spruce and fir. Eumenid Wasps and Black-throated Green Warblers are natural predators.'},
+{t:'SPEC',q:'D-shaped exit holes and dieback starting at the top of a birch indicate:',o:['Bronze Birch Borer','Beech Scale','Maple Leafcutter','White rot'],c:0,e:'Agrilus anxius is lethal to birch. The adult is a slender metallic bronze beetle.'},
+{t:'SPEC',q:'Brown rot fungus leaves wood that is:',o:['Pale, fibrous, and soft','Dry, crumbly, and brown, fracturing into cubes','Hollow and smooth','Black and waxy'],c:1,e:'Brown rot digests cellulose and leaves lignin, common in conifers. White rot breaks down lignin too, leaving pale fibrous wood, common in hardwoods.'},
+{t:'SPEC',q:'A standing dead tree is called a:',o:['Nurse log','Snag','Gall','Bracket'],c:1,e:'Snags are critical habitat for cavity nesters, insects, fungi, and mammals. A nurse log is a fallen decaying tree that shelters seedlings.'},
+{t:'SPEC',q:'Which trees provide the highest-protein mast for wildlife?',o:['Black Cherry and Serviceberry','Northern Red Oak and American Beech','Balsam Fir and Red Spruce','Pussy Willow and Speckled Alder'],c:1,e:'Acorns and beechnuts, plus Yellow Birch and Sugar Maple. Cherry and serviceberry are fruit producers, not mast.'},
+{t:'SPEC',q:'A grouse with a bright red comb over the eye and white chest barring is a:',o:['Male Ruffed Grouse','Male Spruce Grouse','Female Ruffed Grouse','Female Spruce Grouse'],c:1,e:'Spruce Grouse specialize in conifer needles, especially in winter. Ruffed Grouse males have a dark neck ruff and crested head, and feed on buds and catkins.'},
+{t:'SPEC',q:'Neat horizontal rows of small holes drilled in tree bark are the work of a:',o:['Downy Woodpecker','Yellow-bellied Sapsucker','Bronze Birch Borer','White-breasted Nuthatch'],c:1,e:'They are sap wells. The sapsucker eats the sap and the insects it attracts.'}
+];
+
+/* ============================ ANIMAL ID DATA ============================ */
+/* Identification only — one photo, four species options. Photos load live from Wikimedia Commons via Special:FilePath. */
+const ANIMAL_CATS = { MAM:'Mammals', BIRD:'Birds', FISH:'Fish', FLORA:'Flora', SNAKE:'Snakes', AMPH:'Amphibians' };
+
+const QUIZ_ANIMALS = [
+/* ---- Mammals ---- */
+{cat:'MAM',q:'Identify this Maine animal.',img:'Moose by Horst Siewert.jpg',o:['Elk','Moose','White-tailed Deer','Caribou'],c:1,e:'Moose (Alces alces) — the largest deer species, with a drooping muzzle and, on bulls, broad palmate antlers.'},
+{cat:'MAM',q:'Identify this Maine animal.',img:'White tailed doe odocoileus virginianus standing alertly in low brush and looking.jpg',o:['Mule Deer','Elk','White-tailed Deer','Moose'],c:2,e:'White-tailed deer — reddish-brown coat, large ears, and the namesake white underside of the tail, flagged up when alarmed.'},
+{cat:'MAM',q:'Identify this Maine animal.',img:'American black bear ursus americanus.jpg',o:['Brown Bear','Black Bear','Wolverine','Raccoon'],c:1,e:'American black bear — straight facial profile and no shoulder hump, unlike a brown/grizzly bear.'},
+{cat:'MAM',q:'Identify this Maine animal.',img:'Vulpes vulpes ssp fulvus.jpg',o:['Eastern Coyote','Gray Fox','Red Fox','Domestic Dog'],c:2,e:'Red fox — rusty-orange coat, black legs ("stockings"), and a white-tipped bushy tail.'},
+{cat:'MAM',q:'Identify this Maine animal.',img:'Canis latrans (Yosemite, 2009).jpg',o:['Eastern Coyote','Gray Wolf','Red Fox','German Shepherd'],c:0,e:'Coyote — slim build, pointed muzzle, and a tail carried low and straight, unlike a dog\u2019s.'},
+{cat:'MAM',q:'Identify this Maine animal.',img:'Bobcat (Lynx rufus) portrait.jpg',o:['Canada Lynx','Domestic Cat','Bobcat','Mountain Lion'],c:2,e:'Bobcat — short, black-tipped-only-on-top "bobbed" tail and modest ear tufts, smaller than a lynx.'},
+{cat:'MAM',q:'Identify this Maine animal.',img:'Lynx-canadensis.jpg',o:['Bobcat','Canada Lynx','Cougar','Domestic Cat'],c:1,e:'Canada lynx — huge furred paws, long black ear tufts, and a tail with a solid black tip all around.'},
+{cat:'MAM',q:'Identify this Maine animal.',img:'Castor canadensis.jpg',o:['Muskrat','Groundhog','Beaver','River Otter'],c:2,e:'Beaver — the flat, paddle-shaped tail and blunt, heavy body are the giveaway.'},
+{cat:'MAM',q:'Identify this Maine animal.',img:'LutraCanadensis fullres.jpg',o:['Mink','River Otter','Beaver','Fisher'],c:1,e:'River otter — long, thick-based tapering tail, webbed feet, and a playful, low-slung body built for swimming.'},
+{cat:'MAM',q:'Identify this Maine animal.',img:'Lepus americanus 5459.JPG',o:['Eastern Cottontail','Snowshoe Hare','Red Squirrel','Woodchuck'],c:1,e:'Snowshoe hare — oversized hind feet and, seasonally, a coat that turns white for winter camouflage.'},
+{cat:'MAM',q:'Identify this Maine animal.',img:'MainePorcupine.JPG',o:['Groundhog','Raccoon','Porcupine','Beaver'],c:2,e:'North American porcupine — quills covering the back and tail are unmistakable.'},
+{cat:'MAM',q:'Identify this Maine animal.',img:'Fisher (animal).jpg',o:['Mink','Pine Marten','Fisher','River Otter'],c:2,e:'Fisher — a large, dark, long-bodied member of the weasel family, bigger and bushier-tailed than a mink or marten.'},
+
+/* ---- Birds ---- */
+{cat:'BIRD',q:'Identify this Maine bird.',img:'Male wild turkey (Meleagris gallopavo) strutting.jpg',o:['Ruffed Grouse','Canada Goose','Wild Turkey','Great Blue Heron'],c:2,e:'Wild turkey — the fanned tail, bare blue-red head, and iridescent body feathers of a strutting tom.'},
+{cat:'BIRD',q:'Identify this Maine bird.',img:'Bald eagle.jpg',o:['Osprey','Turkey Vulture','Red-tailed Hawk','Bald Eagle'],c:3,e:'Bald eagle — solid white head and tail against a dark brown body, adult plumage.'},
+{cat:'BIRD',q:'Identify this Maine bird.',img:'Loon, common 04-24 a.jpg',o:['Canada Goose','Common Loon','Mallard','Double-crested Cormorant'],c:1,e:'Common loon — checkered black-and-white back, black head, and a spear-like bill, in breeding plumage.'},
+{cat:'BIRD',q:'Identify this Maine bird.',img:'Black-capped Chickadee (Poecile atricapillus) excavating a nest cavity in Waterville, Maine.jpg',o:['Tufted Titmouse','Black-capped Chickadee','Boreal Chickadee','White-breasted Nuthatch'],c:1,e:"Maine's state bird — black cap and bib, white cheeks, and a soft gray back."},
+{cat:'BIRD',q:'Identify this Maine bird.',img:'Ruffed Grouse (1).jpg',o:['Wild Turkey','Spruce Grouse','Ruffed Grouse','Rock Pigeon'],c:2,e:'Ruffed grouse — mottled brown camouflage, a fan tail with a dark band, and a crested head.'},
+{cat:'BIRD',q:'Identify this Maine bird.',img:'Osprey (Pandion haliaetus) on the nest, Falmouth, Maine, US (PPL1-Corrected) julesvernex2.jpg',o:['Bald Eagle','Osprey','Red-tailed Hawk','Turkey Vulture'],c:1,e:'Osprey — white underparts, a dark eye-stripe, and a habit of nesting on platforms and channel markers over water.'},
+{cat:'BIRD',q:'Identify this Maine bird.',img:'GreatBlueHeron.jpg',o:['Great Blue Heron','Sandhill Crane','Canada Goose','Snowy Egret'],c:0,e:'Great blue heron — tall, gray-blue wading bird with a long neck and dagger-like bill, often still-hunting the shallows.'},
+{cat:'BIRD',q:'Identify this Maine coastal bird.',img:"Atlantic puffin (Fratercula arctic) on the water, Maine Coastal Islands National Wildlife Refuge, Maine, US (PPL1-Corrected) julesvernex2.jpg",o:['Common Loon','Atlantic Puffin','Black Guillemot','Razorbill'],c:1,e:'Atlantic puffin — the oversized, brightly colored triangular bill is the tell. Maine\u2019s puffins nest on a handful of coastal islands.'},
+
+/* ---- Fish ---- */
+{cat:'FISH',q:'Identify this Maine fish.',img:'Brook Trout Salvelinus fontinalis 2900px.jpg',o:['Brook Trout','Rainbow Trout','Brown Trout','Lake Trout'],c:0,e:'Brook trout — worm-like (vermiculated) markings on the back and red spots with blue halos along the flanks.'},
+{cat:'FISH',q:'Identify this Maine fish.',img:'Hooked Salmo salar sebago (flipped).jpg',o:['Landlocked Salmon','Brook Trout','Lake Trout','Smallmouth Bass'],c:0,e:'Landlocked salmon — a freshwater form of Atlantic salmon, native to a handful of Maine lake systems including Sebago.'},
+{cat:'FISH',q:'Identify this Maine fish.',img:'Lake trout fishes salvelinus namaycush.jpg',o:['Lake Trout (Togue)','Landlocked Salmon','Brook Trout','Chain Pickerel'],c:0,e:'Lake trout, called togue in Maine — pale spots on a dark background and a deeply forked tail.'},
+{cat:'FISH',q:'Identify this Maine fish.',img:'Detailed underwater photo of smallmouth bass fish micropterus dolomieu.jpg',o:['Largemouth Bass','Smallmouth Bass','Yellow Perch','Chain Pickerel'],c:1,e:'Smallmouth bass — bronze color, vertical bars, and a jaw that stops beneath the eye (a largemouth\u2019s jaw extends past it).'},
+{cat:'FISH',q:'Identify this Maine fish.',img:'Esox niger.jpg',o:['Chain Pickerel','Northern Pike','Smallmouth Bass','Yellow Perch'],c:0,e:'Chain pickerel — a chain-link pattern along the sides and a duck-billed snout.'},
+{cat:'FISH',q:'Identify this Maine fish.',img:'D3149-1. yellow perch (Perca flavescens).jpg',o:['Yellow Perch','Chain Pickerel','Smallmouth Bass','Brook Trout'],c:0,e:'Yellow perch — golden-yellow body with dark vertical bars and orange-tinted fins.'},
+
+/* ---- Flora ---- */
+{cat:'FLORA',q:'Identify this Maine plant.',img:'Pinus strobus trees.jpg',o:['Eastern Hemlock','Eastern White Pine','Red Spruce','Balsam Fir'],c:1,e:"Maine's state tree — soft needles in bundles of five and a tall, straight trunk."},
+{cat:'FLORA',q:'Identify this Maine plant.',img:'Paper Birch (Betula papyrifera) Bark - Kitchener, Ontario.jpg',o:['Paper Birch','Quaking Aspen','American Beech','Eastern White Cedar'],c:0,e:'Paper birch — chalky white bark that peels away in papery horizontal strips.'},
+{cat:'FLORA',q:'Identify this Maine plant.',img:'Acer saccharum leaves.jpg',o:['Red Maple','Sugar Maple','Norway Maple','Striped Maple'],c:1,e:'Sugar maple — the classic five-lobed maple leaf, source of Maine and New England maple syrup.'},
+{cat:'FLORA',q:'Identify this Maine plant.',img:'Balsam Fir (Abies balsamea) - Lark Harbour, Newfoundland 2019-08-18 (02).jpg',o:['Red Spruce','Eastern Hemlock','Balsam Fir','Black Spruce'],c:2,e:'Balsam fir — flat, soft needles with two white stripes underneath, and a spire-shaped crown; the classic Christmas-tree conifer.'},
+{cat:'FLORA',q:'Identify this Maine wildflower.',img:'Cypripedium acaule - Flickr 003 (2).jpg',o:["Pink Lady's Slipper",'Trillium','Jack-in-the-Pulpit','Wood Lily'],c:0,e:"Pink lady's slipper — a native orchid with a large pouch-shaped pink bloom rising from two basal leaves."},
+{cat:'FLORA',q:'Identify this Maine plant.',img:'Lowbush Blueberry (Vaccinium angustifolium) - St. John\'s, Newfoundland 2019-08-08.jpg',o:['Wild Lowbush Blueberry','Huckleberry','Cranberry','Bunchberry'],c:0,e:"Wild lowbush blueberry — the low, spreading shrub behind Maine's wild blueberry barrens and harvest."},
+
+/* ---- Snakes ---- */
+{cat:'SNAKE',q:'Identify this Maine snake.',img:'Thamnophis sirtalis ssp. sirtalis - Eastern Garter Snake.jpg',o:['Common Garter Snake','Northern Watersnake','Eastern Milksnake','Ribbon Snake'],c:0,e:"Maine's most familiar snake — three light stripes running the length of a dark body."},
+{cat:'SNAKE',q:'Identify this Maine snake.',img:'Eastern Milk Snake.jpg',o:['Eastern Milksnake','Common Garter Snake','Northern Watersnake','Corn Snake'],c:0,e:'Eastern milksnake — reddish-brown, black-edged blotches down a gray body; often mistaken for a copperhead, which Maine does not have.'},
+{cat:'SNAKE',q:'Identify this Maine snake.',img:'Ring-necked Snake (Diadophis punctatus).jpg',o:["DeKay's Brown Snake",'Ring-necked Snake','Smooth Green Snake','Redbelly Snake'],c:1,e:'Ring-necked snake — slate-gray above with a distinct pale ring around the neck and a bright yellow-orange belly.'},
+{cat:'SNAKE',q:'Identify this Maine snake.',img:'Smooth Green Snake (Opheodrys vernalis).jpg',o:['Smooth Green Snake','Ring-necked Snake','Garter Snake','Rough Green Snake'],c:0,e:'Smooth green snake — uniform bright green above, pale yellow-white below, smooth (not keeled) scales.'},
+{cat:'SNAKE',q:'Identify this Maine snake.',img:"Storeria dekayi - Dekay's Brownsnake - Oklahoma.jpg",o:["DeKay's Brown Snake",'Ring-necked Snake','Northern Redbelly Snake','Milk Snake'],c:0,e:"DeKay's brown snake — small, grayish-brown with a faint pale center stripe bordered by small dark spots."},
+{cat:'SNAKE',q:'Identify this Maine snake.',img:'Northern Water Snake.jpg',o:['Northern Watersnake','Common Garter Snake','Eastern Milksnake','Timber Rattlesnake'],c:0,e:'Northern watersnake — heavy-bodied, dark blotches or bands, almost always found in or near water. Non-venomous, often mistaken for a "water moccasin."'},
+
+/* ---- Amphibians ---- */
+{cat:'AMPH',q:'Identify this Maine amphibian.',img:'Spotted Salamander.jpg',o:['Blue-spotted Salamander','Spotted Salamander','Eastern Newt','Four-toed Salamander'],c:1,e:'Spotted salamander — stout, dark body with two rows of bright yellow-orange spots down the back.'},
+{cat:'AMPH',q:'Identify this Maine amphibian.',img:'Red Eft - Notophthalmus viridescens, Shenandoah River State Park, Bentonville, Virginia, May 28, 2020.jpg',o:['Eastern Newt (Red Eft)','Spotted Salamander','Redback Salamander','American Toad'],c:0,e:"This is the bright orange \u201cred eft\u201d — the terrestrial teenage stage of the eastern newt, before it returns to water as a greenish adult."},
+{cat:'AMPH',q:'Identify this Maine amphibian.',img:'American toad - Bufo americanus - 3.JPG',o:['American Toad','Spring Peeper','Wood Frog','Fowler\u2019s Toad'],c:0,e:'American toad — dry, warty skin and prominent parotoid glands behind the eyes.'},
+{cat:'AMPH',q:'Identify this Maine amphibian.',img:'H crucifer USGS.jpg',o:['Spring Peeper','Wood Frog','Gray Treefrog','Pickerel Frog'],c:0,e:"Spring peeper — a tiny tan frog with a dark X across its back, one of the first and loudest voices of a Maine spring."},
+{cat:'AMPH',q:'Identify this Maine amphibian.',img:'Wood frog.JPG',o:['Wood Frog','Green Frog','Pickerel Frog','Spring Peeper'],c:0,e:'Wood frog — tan to brown with a bold dark "robber\u2019s mask" through the eye. Can survive being partly frozen over winter.'},
+{cat:'AMPH',q:'Identify this Maine amphibian.',img:'Green Frog Rana clamitans 2448px.jpg',o:['Bullfrog','Green Frog','Pickerel Frog','Mink Frog'],c:1,e:'Green frog — ridged folds (dorsolateral ridges) running partway down the back distinguish it from a bullfrog, which lacks them.'}
+];
+function imgUrl(name){return 'https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(name);}
+
+/* ============================ STATE ============================ */
+const KEY='meguide.quiz.v3';
+let state={
+  view:'law',                 // 'law' | 'animals' | 'missed'
+  activeTopics:Object.keys(TOPICS),
+  activeAnimalCats:Object.keys(ANIMAL_CATS),
+  lastScore:{law:null,animals:null},
+  missed:{law:{},animals:{}}, // persistent, id -> true
+  quiz:{pool:[],i:0,answered:null,right:0,misses:[],done:false,track:'law'}
+};
+
+function pool(track){return track==='law'?QUIZ_LAW:QUIZ_ANIMALS;}
+function qid(track,item){return track+'|'+item.q.slice(0,10)+'|'+item.o[item.c];}
+
+function applySaved(s){
+  if(s.activeTopics&&s.activeTopics.length)state.activeTopics=s.activeTopics;
+  if(s.activeAnimalCats&&s.activeAnimalCats.length)state.activeAnimalCats=s.activeAnimalCats;
+  if(s.lastScore)state.lastScore=s.lastScore;
+  if(s.missed)state.missed=s.missed;
+}
+async function load(){
+  // Inside Claude.ai artifacts, window.storage persists across sessions.
+  // Outside Claude.ai (e.g. hosted on GitHub Pages), fall back to the browser's localStorage.
+  try{
+    if(window.storage){
+      const r=await window.storage.get(KEY);
+      if(r&&r.value)applySaved(JSON.parse(r.value));
+    }else{
+      const raw=localStorage.getItem(KEY);
+      if(raw)applySaved(JSON.parse(raw));
+    }
+  }catch(e){/* first run or storage unavailable */}
+}
+async function save(){
+  const payload=JSON.stringify({activeTopics:state.activeTopics,activeAnimalCats:state.activeAnimalCats,lastScore:state.lastScore,missed:state.missed});
+  try{
+    if(window.storage)await window.storage.set(KEY,payload);
+    else localStorage.setItem(KEY,payload);
+  }catch(e){/* storage unavailable */}
+}
+
+const inTopics=x=>state.activeTopics.includes(x.t);
+const inAnimalCat=x=>state.activeAnimalCats.includes(x.cat);
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+const view=document.getElementById('view');
+
+/* ---- header / nav ---- */
+function renderChrome(){
+  document.getElementById('navLaw').classList.toggle('active',state.view==='law');
+  document.getElementById('navAnimals').classList.toggle('active',state.view==='animals');
+  document.getElementById('navMissed').classList.toggle('active',state.view==='missed');
+
+  const mCount=Object.keys(state.missed.law).length+Object.keys(state.missed.animals).length;
+  document.getElementById('missedCnt').textContent=mCount?mCount:'';
+
+  const isLaw=state.view==='law', isAnimals=state.view==='animals';
+  document.getElementById('hTitle').textContent=isAnimals?'Animal ID':(isLaw?'Guide Exam Quiz':'Missed Questions');
+  document.getElementById('hSub').textContent=isAnimals
+    ?'Maine wildlife & flora \u2014 identification only, from photos'
+    :(isLaw?'Recreational classification \u00b7 70% to pass':'Everything you\u2019ve gotten wrong, saved for review');
+  document.getElementById('filtersBox').style.display=(isLaw||isAnimals)?'':'none';
+  document.getElementById('newRound').style.display=isAnimals||isLaw?'':'none';
+
+  const track=isAnimals?'animals':'law';
+  const rm=document.getElementById('retestMissed');
+  const mCountTrack=Object.keys(state.missed[track]||{}).length;
+  rm.style.display=isLaw||isAnimals?'':'none';
+  rm.textContent='Retest missed ('+mCountTrack+')';
+  rm.disabled=mCountTrack===0;
+
+  const ls=state.lastScore[track];
+  const g=document.getElementById('gauge'), gp=document.getElementById('gaugePct');
+  if(ls==null){g.style.background=getComputedStyle(document.documentElement).getPropertyValue('--chip');gp.textContent='\u2014';}
+  else{
+    const color=ls>=70?getComputedStyle(document.documentElement).getPropertyValue('--ok'):getComputedStyle(document.documentElement).getPropertyValue('--err');
+    g.style.background='conic-gradient('+color+' '+ls+'%, var(--chip) '+ls+'% 100%)';
+    gp.textContent=ls+'%';
+  }
+}
+
+function renderChips(){
+  const box=document.getElementById('chips');
+  if(state.view==='animals'){
+    box.innerHTML=Object.keys(ANIMAL_CATS).map(k=>{
+      const n=QUIZ_ANIMALS.filter(c=>c.cat===k).length;
+      const on=state.activeAnimalCats.includes(k);
+      return '<button class="chip" data-cat="'+k+'" aria-pressed="'+on+'">'+ANIMAL_CATS[k]+' <span class="n">'+n+'</span></button>';
+    }).join('');
+    box.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{
+      const k=b.dataset.cat;
+      state.activeAnimalCats=state.activeAnimalCats.includes(k)?state.activeAnimalCats.filter(x=>x!==k):state.activeAnimalCats.concat([k]);
+      if(!state.activeAnimalCats.length)state.activeAnimalCats=[k];
+      save();renderChips();renderChrome();startQuiz('animals');render();
+    });
+    const all=state.activeAnimalCats.length===Object.keys(ANIMAL_CATS).length;
+    document.getElementById('filterLabel').textContent='Categories \u2014 '+(all?'all':state.activeAnimalCats.length+' of '+Object.keys(ANIMAL_CATS).length);
+    return;
+  }
+  box.innerHTML=Object.keys(TOPICS).map(k=>{
+    const n=QUIZ_LAW.filter(c=>c.t===k).length;
+    const on=state.activeTopics.includes(k);
+    return '<button class="chip" data-t="'+k+'" aria-pressed="'+on+'">'+TOPICS[k]+' <span class="n">'+n+'</span></button>';
+  }).join('');
+  box.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{
+    const t=b.dataset.t;
+    state.activeTopics=state.activeTopics.includes(t)?state.activeTopics.filter(x=>x!==t):state.activeTopics.concat([t]);
+    if(!state.activeTopics.length)state.activeTopics=[t];
+    save();renderChips();renderChrome();startQuiz('law');render();
+  });
+  const all=state.activeTopics.length===Object.keys(TOPICS).length;
+  document.getElementById('filterLabel').textContent='Topics \u2014 '+(all?'all':state.activeTopics.length+' of '+Object.keys(TOPICS).length);
+}
+
+function startQuiz(track){
+  const filterFn=track==='animals'?inAnimalCat:inTopics;
+  const src=pool(track).filter(filterFn);
+  state.quiz={pool:shuffle(src),i:0,answered:null,right:0,misses:[],done:false,track};
+}
+function startMissedOnly(track){
+  const missedIds=state.missed[track]||{};
+  const items=pool(track).filter(it=>missedIds[qid(track,it)]);
+  state.quiz={pool:shuffle(items),i:0,answered:null,right:0,misses:[],done:false,track};
+}
+
+function render(){
+  renderChrome();
+  if(state.view==='missed')return renderMissedList();
+  const track=state.view;
+  if(state.quiz.track!==track||(!state.quiz.pool.length&&!state.quiz.done)){startQuiz(track);}
+  renderQuiz();
+}
+
+function renderQuiz(){
+  const q=state.quiz;
+  if(!q.pool.length){
+    view.innerHTML='<div class="empty">Nothing in this filter yet.<br>Widen the category selection or start a new round.</div>';return;
+  }
+  if(q.done)return renderResults();
+
+  const item=q.pool[q.i];
+  const letters=['A','B','C','D'];
+  const isAnimals=q.track==='animals';
+  view.innerHTML=
+    '<div class="meter"><span>QUESTION '+(q.i+1)+' OF '+q.pool.length+'</span><span class="spacer"></span>'+
+      '<span>SCORE '+q.right+' / '+(q.answered===null?q.i:q.i+1)+'</span></div>'+
+    '<div class="track"><i style="width:'+Math.round(q.i/q.pool.length*100)+'%"></i></div>'+
+    '<div class="qcard">'+
+      '<div class="tags">'+
+        (isAnimals?'<span class="pill b">'+ANIMAL_CATS[item.cat]+'</span>':'<span class="pill a">'+TOPICS[item.t]+'</span>')+
+      '</div>'+
+      (isAnimals?'<img class="qimg" src="'+imgUrl(item.img)+'" alt="Animal or plant to identify" loading="lazy">':'')+
+      '<h2>'+item.q+'</h2>'+
+      '<div class="opts" id="opts">'+item.o.map((o,i)=>
+        '<button class="opt" data-i="'+i+'"><span class="k">'+letters[i]+'</span><span>'+o+'</span></button>').join('')+
+      '</div>'+
+      '<div id="verdict"></div>'+
+    '</div>'+
+    '<div class="bar" style="margin-top:14px"><span class="spacer"></span><button class="btn primary" id="nextq" hidden>Next \u2192</button></div>';
+
+  const opts=view.querySelectorAll('.opt');
+  opts.forEach(b=>b.onclick=()=>{
+    if(q.answered!==null)return;
+    const pick=+b.dataset.i;
+    q.answered=pick;
+    opts.forEach(o=>{o.disabled=true;
+      if(+o.dataset.i===item.c)o.classList.add('right');
+      else if(+o.dataset.i===pick)o.classList.add('wrong');});
+    const ok=pick===item.c;
+    const id=qid(q.track,item);
+    if(ok){q.right++; delete state.missed[q.track][id];}
+    else{q.misses.push({item,pick}); state.missed[q.track][id]=true;}
+    save();
+    document.getElementById('verdict').innerHTML=
+      '<div class="verdict '+(ok?'ok':'no')+'"><b>'+(ok?'Correct':'Not quite')+'</b>'+item.e+'</div>';
+    const nb=document.getElementById('nextq');
+    nb.hidden=false;nb.textContent=(q.i===q.pool.length-1)?'See results \u2192':'Next \u2192';
+    nb.focus({preventScroll:true});
+    nb.onclick=()=>{
+      if(q.i===q.pool.length-1){
+        q.done=true;
+        const pct=Math.round(q.right/q.pool.length*100);
+        state.lastScore[q.track]=pct; save();
+      }else{q.i++;q.answered=null;}
+      render();
+    };
+  });
+}
+
+function renderResults(){
+  const q=state.quiz;
+  const pct=Math.round(q.right/q.pool.length*100);
+  const pass=pct>=70;
+  view.innerHTML=
+    '<div class="qcard results">'+
+      '<h2>'+(pass?'Passing score':'Below passing')+'</h2>'+
+      '<div class="score '+(pass?'pass':'fail')+'">'+pct+'%</div>'+
+      '<div class="meter"><span>'+q.right+' of '+q.pool.length+' correct'+(q.track==='law'?' \u00b7 70% required on the written exam':'')+'</span></div>'+
+      (q.misses.length?'<div class="missed"><h3>Review these</h3>'+q.misses.map(m=>
+        '<div class="item"><div class="q">'+m.item.q+'</div>'+
+        '<div class="y">You chose: '+m.item.o[m.pick]+'</div>'+
+        '<div class="a">Correct: '+m.item.o[m.item.c]+'</div></div>').join('')+'</div>':
+        '<div class="missed"><h3>Review these</h3><div class="item">Nothing missed \u2014 clean round.</div></div>')+
+    '</div>'+
+    '<div class="bar" style="margin-top:14px">'+
+      '<button class="btn primary" id="againq">New round</button>'+
+      (q.misses.length?'<button class="btn" id="onlymiss">Retry missed only</button>':'')+
+    '</div>';
+  document.getElementById('againq').onclick=()=>{startQuiz(q.track);render();};
+  const om=document.getElementById('onlymiss');
+  if(om)om.onclick=()=>{state.quiz={pool:shuffle(q.misses.map(m=>m.item)),i:0,answered:null,right:0,misses:[],done:false,track:q.track};render();};
+}
+
+function renderMissedList(){
+  const lawItems=QUIZ_LAW.filter(it=>state.missed.law[qid('law',it)]);
+  const animalItems=QUIZ_ANIMALS.filter(it=>state.missed.animals[qid('animals',it)]);
+  if(!lawItems.length&&!animalItems.length){
+    view.innerHTML='<div class="empty">No missed questions on record.<br>Answer a few wrong and they will collect here for review.</div>';
+    return;
+  }
+  const row=(it,track)=> '<div class="item">'+
+      (track==='animals'?'<img src="'+imgUrl(it.img)+'" alt="">':'')+
+      '<div style="flex:1"><div class="t">'+(track==='animals'?ANIMAL_CATS[it.cat]:TOPICS[it.t])+'</div><div class="q">'+it.q+' \u2014 <b>'+it.o[it.c]+'</b></div></div>'+
+    '</div>';
+  view.innerHTML='<div class="mlist">'+
+    (lawItems.length?'<div class="meter">LAW & REGS \u00b7 '+lawItems.length+'</div>'+lawItems.map(it=>row(it,'law')).join(''):'')+
+    (animalItems.length?'<div class="meter" style="margin-top:'+(lawItems.length?'16px':'0')+'">ANIMAL ID \u00b7 '+animalItems.length+'</div>'+animalItems.map(it=>row(it,'animals')).join(''):'')+
+  '</div>'+
+  '<div class="bar" style="margin-top:14px">'+
+    (lawItems.length?'<button class="btn primary" id="rtLaw">Retest law missed</button>':'')+
+    (animalItems.length?'<button class="btn primary" id="rtAnimals">Retest animal missed</button>':'')+
+  '</div>';
+  const rl=document.getElementById('rtLaw'); if(rl)rl.onclick=()=>{state.view='law';startMissedOnly('law');render();};
+  const ra=document.getElementById('rtAnimals'); if(ra)ra.onclick=()=>{state.view='animals';startMissedOnly('animals');render();};
+}
+
+/* ============================ WIRING ============================ */
+document.getElementById('navLaw').onclick=()=>{state.view='law';renderChips();startQuiz('law');render();};
+document.getElementById('navAnimals').onclick=()=>{state.view='animals';renderChips();startQuiz('animals');render();};
+document.getElementById('navMissed').onclick=()=>{state.view='missed';render();};
+document.getElementById('navReset').onclick=()=>{
+  state.lastScore={law:null,animals:null}; state.missed={law:{},animals:{}}; save();
+  startQuiz(state.view==='animals'?'animals':'law'); render();
+};
+document.getElementById('allOn').onclick=()=>{
+  if(state.view==='animals'){state.activeAnimalCats=Object.keys(ANIMAL_CATS);save();renderChips();startQuiz('animals');render();}
+  else{state.activeTopics=Object.keys(TOPICS);save();renderChips();startQuiz('law');render();}
+};
+document.getElementById('allOff').onclick=()=>{
+  if(state.view==='animals'){state.activeAnimalCats=[Object.keys(ANIMAL_CATS)[0]];save();renderChips();startQuiz('animals');render();}
+  else{state.activeTopics=[Object.keys(TOPICS)[0]];save();renderChips();startQuiz('law');render();}
+};
+document.getElementById('newRound').onclick=()=>{startQuiz(state.view==='animals'?'animals':'law');render();};
+document.getElementById('retestMissed').onclick=()=>{startMissedOnly(state.view==='animals'?'animals':'law');render();};
+
+(async()=>{await load();renderChips();startQuiz('law');render();})();
+</script>
